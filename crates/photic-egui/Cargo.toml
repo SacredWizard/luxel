@@ -1,0 +1,21 @@
+[package]
+name = "photic-egui"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Candlestick/heatmap chart widget for egui, GPU-rendered with photic"
+
+[dependencies]
+photic-core = { path = "../photic-core" }
+photic-gpu = { path = "../photic-gpu" }
+photic-finance = { path = "../photic-finance" }
+egui = { version = "0.35", default-features = false }
+egui-wgpu = "0.35"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+web-sys = { version = "0.3", features = ["Window", "Performance"] }
+
+[lints]
+workspace = true

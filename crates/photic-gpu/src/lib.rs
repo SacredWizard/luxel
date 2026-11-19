@@ -44,7 +44,12 @@ impl Renderer {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("photic shaders"),
             source: wgpu::ShaderSource::Wgsl(
-                format!("const SRGB_TARGET: bool = {};\n{}", format.is_srgb(), include_str!("shaders.wgsl")).into(),
+                format!(
+                    "const SRGB_TARGET: bool = {};\n{}",
+                    format.is_srgb(),
+                    include_str!("shaders.wgsl")
+                )
+                .into(),
             ),
         });
         let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -81,7 +86,10 @@ impl Renderer {
                 },
                 primitive: wgpu::PrimitiveState::default(),
                 depth_stencil: None,
-                multisample: wgpu::MultisampleState { count: sample_count, ..Default::default() },
+                multisample: wgpu::MultisampleState {
+                    count: sample_count,
+                    ..Default::default()
+                },
                 fragment: Some(wgpu::FragmentState {
                     module: &shader,
                     entry_point: Some(fs),
@@ -181,7 +189,10 @@ impl Layer {
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("photic view"),
             layout: &renderer.layout,
-            entries: &[wgpu::BindGroupEntry { binding: 0, resource: uniform.as_entire_binding() }],
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniform.as_entire_binding(),
+            }],
         });
         Self {
             uniform,
@@ -195,7 +206,12 @@ impl Layer {
     /// Update the view (cheap: 32 bytes). `viewport_px` is the size of the
     /// render-pass viewport in physical pixels.
     pub fn set_view(&self, queue: &wgpu::Queue, t: GpuTransform, viewport_px: [f32; 2]) {
-        let u = ViewUniform { scale: t.scale, offset: t.offset, viewport_px, _pad: [0.0; 2] };
+        let u = ViewUniform {
+            scale: t.scale,
+            offset: t.offset,
+            viewport_px,
+            _pad: [0.0; 2],
+        };
         queue.write_buffer(&self.uniform, 0, bytemuck::bytes_of(&u));
     }
 

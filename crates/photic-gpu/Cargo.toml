@@ -13,3 +13,6 @@ photic-core = { path = "../photic-core" }
 [dev-dependencies]
 photic-finance = { path = "../photic-finance" }
 pollster = "0.4"
+
+[lints]
+workspace = true

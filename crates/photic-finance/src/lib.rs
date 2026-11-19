@@ -4,7 +4,7 @@
 //! pyramid that keeps true extremes, candle/volume lowering to GPU primitives,
 //! and streaming-friendly indicators.
 
-use photic_core::{prims::polyline, Aggregate, MinMax, Pyramid, Rect, Rgba, Segment};
+use photic_core::{Aggregate, Heatmap, MinMax, Pyramid, Rect, Rgba, Segment, prims::polyline};
 
 /// One OHLCV bar. `time` is a Unix timestamp in milliseconds.
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
@@ -19,7 +19,14 @@ pub struct Bar {
 
 impl Bar {
     pub fn new(time: i64, open: f64, high: f64, low: f64, close: f64, volume: f64) -> Self {
-        Self { time, open, high, low, close, volume }
+        Self {
+            time,
+            open,
+            high,
+            low,
+            close,
+            volume,
+        }
     }
 }
 
@@ -47,7 +54,9 @@ pub struct OhlcSeries {
 
 impl OhlcSeries {
     pub fn new(bars: Vec<Bar>) -> Self {
-        Self { pyramid: Pyramid::build(bars) }
+        Self {
+            pyramid: Pyramid::build(bars),
+        }
     }
     pub fn len(&self) -> usize {
         self.pyramid.len()
@@ -83,7 +92,11 @@ pub struct CandleStyle {
 
 impl Default for CandleStyle {
     fn default() -> Self {
-        Self { up: Rgba::rgb(38, 166, 154), down: Rgba::rgb(239, 83, 80), body: 0.7 }
+        Self {
+            up: Rgba::rgb(38, 166, 154),
+            down: Rgba::rgb(239, 83, 80),
+            body: 0.7,
+        }
     }
 }
 
@@ -105,13 +118,105 @@ pub fn candles(
         let x0 = first as f64 + i as f64 * slot - origin.0;
         let cx = (x0 + slot * 0.5) as f32;
         let half = (slot * style.body as f64 * 0.5) as f32;
-        let color = if b.close >= b.open { style.up } else { style.down };
+        let color = if b.close >= b.open {
+            style.up
+        } else {
+            style.down
+        };
         let (o, c) = ((b.open - origin.1) as f32, (b.close - origin.1) as f32);
         let (lo, hi) = ((b.low - origin.1) as f32, (b.high - origin.1) as f32);
         out.push(Rect::new([cx, lo], [cx, hi], color).with_min_px(1.0, 1.0));
-        out.push(Rect::new([cx - half, o.min(c)], [cx + half, o.max(c)], color).with_min_px(1.0, 1.0));
+        out.push(
+            Rect::new([cx - half, o.min(c)], [cx + half, o.max(c)], color).with_min_px(1.0, 1.0),
+        );
     }
     items.len()
+}
+
+/// Lower visible volume bars (`y = 0..volume`) of LOD level `k` into rects
+/// coloured by candle direction. Returns the largest visible volume, for
+/// fitting the volume pane.
+pub fn volume(
+    series: &OhlcSeries,
+    level: usize,
+    range: (usize, usize),
+    origin_x: f64,
+    style: &CandleStyle,
+    alpha: u8,
+    out: &mut Vec<Rect>,
+) -> f64 {
+    let (first, items) = series.pyramid.visible(level, range.0, range.1);
+    let slot = (1usize << level.min(series.pyramid.max_level())) as f64;
+    let mut max = 0.0f64;
+    for (i, b) in items.iter().enumerate() {
+        let x0 = first as f64 + i as f64 * slot - origin_x;
+        let cx = (x0 + slot * 0.5) as f32;
+        let half = (slot * style.body as f64 * 0.5) as f32;
+        let c = if b.close >= b.open {
+            style.up
+        } else {
+            style.down
+        };
+        let color = Rgba((c.0 & !0xff) | alpha as u32);
+        out.push(
+            Rect::new([cx - half, 0.0], [cx + half, b.volume as f32], color).with_min_px(1.0, 0.0),
+        );
+        max = max.max(b.volume);
+    }
+    max
+}
+
+/// Synthetic order-book liquidity for bars `[start, end)`: one heatmap column
+/// per bar, `rows` price buckets. Liquidity clusters near price, with
+/// persistent "walls" that appear, linger and get eaten when price trades
+/// through them. For demos and benchmarks.
+pub fn synthetic_book(bars: &[Bar], start: usize, rows: usize, seed: u64) -> Heatmap {
+    let span = &bars[start.min(bars.len())..];
+    let lo = span.iter().map(|b| b.low).fold(f64::INFINITY, f64::min);
+    let hi = span
+        .iter()
+        .map(|b| b.high)
+        .fold(f64::NEG_INFINITY, f64::max);
+    let (lo, hi) = if lo.is_finite() && hi > lo {
+        (lo, hi)
+    } else {
+        (0.0, 1.0)
+    };
+    let pad = (hi - lo) * 0.1;
+    let (y0, dy) = (lo - pad, (hi - lo + 2.0 * pad) / rows as f64);
+    let mut h = Heatmap::new(rows, start as f64, y0, dy);
+    let mut state = seed.max(1);
+    let mut rnd = move || {
+        state ^= state >> 12;
+        state ^= state << 25;
+        state ^= state >> 27;
+        (state.wrapping_mul(0x2545_F491_4F6C_DD1D) >> 11) as f32 / (1u64 << 53) as f32
+    };
+    // (row, size, remaining life)
+    let mut walls: Vec<(usize, f32, u32)> = Vec::new();
+    let mut col = vec![0.0f32; rows];
+    for b in span {
+        let pr = ((b.close - y0) / dy) as f32;
+        if rnd() < 0.04 {
+            let off = (rnd() - 0.5) * rows as f32 * 0.5;
+            let r = (pr + off).clamp(0.0, rows as f32 - 1.0) as usize;
+            walls.push((r, 2.0 + rnd() * 5.0, 200 + (rnd() * 3000.0) as u32));
+        }
+        let (bl, bh) = (((b.low - y0) / dy) as usize, ((b.high - y0) / dy) as usize);
+        walls.retain_mut(|w| {
+            w.2 = w.2.saturating_sub(1);
+            w.2 > 0 && !(w.0 >= bl && w.0 <= bh && rnd() < 0.5)
+        });
+        for (r, v) in col.iter_mut().enumerate() {
+            let d = (r as f32 - pr).abs();
+            *v = (2.0 * (-d / (rows as f32 * 0.06)).exp() + 0.3 * rnd()) * (0.6 + 0.4 * rnd());
+        }
+        for w in &walls {
+            col[w.0] += w.1;
+        }
+        h.push_column(&col);
+    }
+    h
 }
 
 /// Simple moving average over closes. `NaN` until `period` bars are seen,
@@ -125,10 +230,18 @@ pub fn sma(bars: &[Bar], period: usize) -> Vec<f64> {
     let (mut sum, mut bad) = (0.0, 0usize);
     for i in 0..bars.len() {
         let v = bars[i].close;
-        if v.is_finite() { sum += v } else { bad += 1 }
+        if v.is_finite() {
+            sum += v
+        } else {
+            bad += 1
+        }
         if i >= period {
             let old = bars[i - period].close;
-            if old.is_finite() { sum -= old } else { bad -= 1 }
+            if old.is_finite() {
+                sum -= old
+            } else {
+                bad -= 1
+            }
         }
         if i + 1 >= period && bad == 0 {
             out[i] = sum / period as f64;
@@ -143,7 +256,11 @@ pub fn ema(bars: &[Bar], period: usize) -> Vec<f64> {
     let mut prev = f64::NAN;
     bars.iter()
         .map(|b| {
-            prev = if prev.is_nan() { b.close } else { b.close * k + prev * (1.0 - k) };
+            prev = if prev.is_nan() {
+                b.close
+            } else {
+                b.close * k + prev * (1.0 - k)
+            };
             prev
         })
         .collect()
@@ -158,7 +275,9 @@ pub struct LineSeries {
 
 impl LineSeries {
     pub fn new(values: &[f64]) -> Self {
-        Self { pyramid: Pyramid::build(values.iter().map(|v| MinMax::point(*v)).collect()) }
+        Self {
+            pyramid: Pyramid::build(values.iter().map(|v| MinMax::point(*v)).collect()),
+        }
     }
     pub fn push(&mut self, v: f64) {
         self.pyramid.push(MinMax::point(v))
@@ -168,7 +287,15 @@ impl LineSeries {
 /// Lower the visible part of a line at LOD `level` into segments. At level 0
 /// it is the exact polyline; above, each slot contributes its min and max, so
 /// no extreme is ever dropped. Non-finite values break the line.
-pub fn line(series: &LineSeries, level: usize, range: (usize, usize), origin: (f64, f64), color: Rgba, width_px: f32, out: &mut Vec<Segment>) {
+pub fn line(
+    series: &LineSeries,
+    level: usize,
+    range: (usize, usize),
+    origin: (f64, f64),
+    color: Rgba,
+    width_px: f32,
+    out: &mut Vec<Segment>,
+) {
     let level = level.min(series.pyramid.max_level());
     let (first, items) = series.pyramid.visible(level, range.0, range.1);
     let slot = (1usize << level) as f64;
@@ -212,7 +339,14 @@ pub fn random_walk(n: usize, seed: u64) -> Vec<Bar> {
             let high = open.max(close) + rnd() * 0.006 * price;
             let low = (open.min(close) - rnd() * 0.006 * price).max(0.001);
             price = close;
-            Bar::new(t0 + i as i64 * 60_000, open, high, low, close, 100.0 + rnd() * 1000.0)
+            Bar::new(
+                t0 + i as i64 * 60_000,
+                open,
+                high,
+                low,
+                close,
+                100.0 + rnd() * 1000.0,
+            )
         })
         .collect()
 }
@@ -226,8 +360,14 @@ mod tests {
         let bars = random_walk(5000, 7);
         let s = OhlcSeries::new(bars.clone());
         for (a, b) in [(0, 5000), (3, 4097), (1000, 1001), (17, 2999)] {
-            let lo = bars[a..b].iter().map(|x| x.low).fold(f64::INFINITY, f64::min);
-            let hi = bars[a..b].iter().map(|x| x.high).fold(f64::NEG_INFINITY, f64::max);
+            let lo = bars[a..b]
+                .iter()
+                .map(|x| x.low)
+                .fold(f64::INFINITY, f64::min);
+            let hi = bars[a..b]
+                .iter()
+                .map(|x| x.high)
+                .fold(f64::NEG_INFINITY, f64::max);
             assert_eq!(s.price_range(a, b), Some((lo, hi)));
         }
     }
@@ -245,9 +385,16 @@ mod tests {
     fn candles_emit_two_rects_each() {
         let s = OhlcSeries::new(random_walk(1000, 2));
         let mut out = Vec::new();
-        let n = candles(&s, 2, (100, 200), (100.0, 100.0), &CandleStyle::default(), &mut out);
+        let n = candles(
+            &s,
+            2,
+            (100, 200),
+            (100.0, 100.0),
+            &CandleStyle::default(),
+            &mut out,
+        );
         assert_eq!(out.len(), n * 2);
-        assert!(n >= 25 && n <= 26);
+        assert!((25..=26).contains(&n));
     }
 
     #[test]
@@ -256,13 +403,26 @@ mod tests {
         v[517] = 50.0;
         let ls = LineSeries::new(&v);
         let mut out = Vec::new();
-        line(&ls, 6, (0, 1024), (0.0, 0.0), Rgba::rgb(1, 2, 3), 1.0, &mut out);
+        line(
+            &ls,
+            6,
+            (0, 1024),
+            (0.0, 0.0),
+            Rgba::rgb(1, 2, 3),
+            1.0,
+            &mut out,
+        );
         assert!(out.iter().any(|s| s.a[1] == 50.0 || s.b[1] == 50.0));
     }
 
     #[test]
     fn sma_recovers_after_nan() {
-        let mut bars: Vec<Bar> = (1..=6).map(|i| Bar { close: i as f64, ..Default::default() }).collect();
+        let mut bars: Vec<Bar> = (1..=6)
+            .map(|i| Bar {
+                close: i as f64,
+                ..Default::default()
+            })
+            .collect();
         bars[1].close = f64::NAN;
         let s = sma(&bars, 2);
         assert!(s[1].is_nan() && s[2].is_nan());
@@ -270,8 +430,34 @@ mod tests {
     }
 
     #[test]
+    fn volume_and_book() {
+        let bars = random_walk(5000, 3);
+        let s = OhlcSeries::new(bars.clone());
+        let mut out = Vec::new();
+        let max = volume(
+            &s,
+            0,
+            (100, 200),
+            100.0,
+            &CandleStyle::default(),
+            140,
+            &mut out,
+        );
+        assert_eq!(out.len(), 100);
+        assert!(max > 0.0 && out.iter().all(|r| r.max[1] as f64 <= max + 1e-3));
+        let h = synthetic_book(&bars, 1000, 64, 9);
+        assert_eq!(h.cols(), 4000);
+        assert!(h.max_value() > 0.0);
+    }
+
+    #[test]
     fn sma_values() {
-        let bars: Vec<Bar> = (1..=5).map(|i| Bar { close: i as f64, ..Default::default() }).collect();
+        let bars: Vec<Bar> = (1..=5)
+            .map(|i| Bar {
+                close: i as f64,
+                ..Default::default()
+            })
+            .collect();
         let s = sma(&bars, 2);
         assert!(s[0].is_nan());
         assert_eq!(&s[1..], &[1.5, 2.5, 3.5, 4.5]);

@@ -21,10 +21,11 @@ It runs on Metal, Vulkan, DX12, **WebGPU and WebGL2** from the same code.
 
 | crate | what | deps |
 |---|---|---|
-| [`photic-core`](crates/photic-core) | `Pyramid<T: Aggregate>` (generic LOD tree), d3-style scales (linear, log, time, band), nice ticks, `Camera2D`, GPU primitive types | `bytemuck` |
+| [`photic-core`](crates/photic-core) | `Pyramid<T: Aggregate>` (generic LOD tree), `Heatmap` (column LOD by max), d3-style scales (linear, log, time, band), nice ticks, `Camera2D`, GPU primitive types | `bytemuck` |
 | [`photic-gpu`](crates/photic-gpu) | wgpu renderer: `Renderer` (pipelines) + `Layer` (instance buffers + view) | `wgpu` |
 | [`photic-finance`](crates/photic-finance) | OHLCV `Bar`, `OhlcSeries`, candle lowering, `LineSeries` (min/max LOD lines), SMA/EMA, streaming `push`/`update_last` | core |
-| [`photic-demo`](examples/photic-demo) | egui app: drag to pan, wheel to zoom, crosshair, 100K / 1M / 10M bars | eframe |
+| [`photic-egui`](crates/photic-egui) | Ready-made egui chart widget: candles, indicator lines, order-book heatmap, volume pane, eased price axis, axes, crosshair | `egui`, `egui-wgpu` |
+| [`photic-demo`](examples/photic-demo) | egui app (native + browser): 100K / 1M / 10M bars, heatmap, volume, scripted benchmark mode | eframe |
 
 `photic-core` has no GPU or GUI dependency. `photic-gpu` depends only on
 `wgpu`, so it plugs into **egui, iced, bevy, winit or headless** rendering.
@@ -74,12 +75,63 @@ In the demo, 10M bars fully zoomed out rebuild their instances in about 1.2 ms
 and the app runs at the display refresh rate (about 120 fps on a 120 Hz
 screen).
 
-**Not yet measured:** a head-to-head against TradingView's
-`lightweight-charts`, ECharts or D3 on the same machine and dataset. That
-benchmark is the next milestone; until then, treat the numbers above as
-photic's own and not as a comparison.
+### In the browser: photic vs TradingView lightweight-charts
+
+The same scripted scenario runs in both: 600 frames sweeping the visible window
+from 300 bars to the **whole series** and back, panning along the way. Same
+browser (headless Chrome, which paces frames at 60 Hz), same 1400×800
+viewport, same machine (Apple Silicon), same random-walk data shape.
+
+| bars | library | load | mean fps | p50 frame | p95 frame | p99 frame |
+|---:|---|---:|---:|---:|---:|---:|
+| 100K | photic | 1 ms | **60.1** | 16.7 ms | 17.6 ms | 18.0 ms |
+| 100K | lightweight-charts 4.2.0 | 39 ms | 51.0 | 16.7 ms | 49.9 ms | 50.1 ms |
+| 1M | photic | 12 ms | **59.6** | 16.7 ms | 17.5 ms | 17.8 ms |
+| 1M | lightweight-charts 4.2.0 | 454 ms | 11.6 | 16.7 ms | 433 ms | 617 ms |
+| 10M | photic | 114 ms | **60.0** | 16.7 ms | 17.3 ms | 17.8 ms |
+| 10M | lightweight-charts 4.2.0 | did not finish within 4 min | | | | |
+
+"Load" is building photic's pyramid vs `series.setData()`. photic's run also
+draws an order-book heatmap, a volume pane and two indicators;
+lightweight-charts draws candles only. lightweight-charts' default
+`minBarSpacing` stops you from zooming out this far, so the bench lowers it to
+make the scenario possible. Treat this as one machine and one scenario, not a
+general verdict. Reproduce it:
+
+```bash
+./examples/photic-demo/build-web.sh
+```
+
+```bash
+python3 -m http.server -d examples/photic-demo/web 8080
+```
+
+Then open `http://localhost:8080/?bars=1000000&bench=1` and
+`http://localhost:8080/bench-lwc.html?bars=1000000`. Each prints a
+`*_BENCH {json}` line to the console and the page title. Use a visible tab: browsers throttle hidden ones.
 
 ## Using it
+
+### With egui (easiest)
+
+```rust
+use photic_egui::{Chart, ChartState};
+
+// once, in your eframe::App constructor (wgpu renderer):
+photic_egui::install(cc.wgpu_render_state.as_ref().unwrap());
+
+// every frame:
+Chart::new("btc", &series)                        // OhlcSeries
+    .line(&sma50, Rgba::rgb(255, 193, 7), 1.5)    // LineSeries
+    .heatmap(&order_book)                         // Heatmap
+    .volume(true)
+    .show(ui, &mut self.chart_state);             // ChartState
+```
+
+The price axis eases toward the visible range instead of snapping, so zooming
+feels continuous (`ChartStyle::y_ease_secs`, 0 to disable).
+
+### With any wgpu host
 
 ```rust
 use photic_core::{lod_level_for, Camera2D};
@@ -128,7 +180,8 @@ first layer on top of it.
 - [x] Line LOD via min/max envelope (M4) for indicator and time-series lines
 - [ ] Proper polyline joins (miter/bevel) for translucent lines
 - [ ] Area/band fills, gradients, dashed lines, line joins
-- [ ] Heatmap texture layer (order-book liquidity, spectrograms, matrices)
+- [x] Heatmap layer with column LOD (order-book liquidity, spectrograms, matrices)
+- [ ] Heatmap as a GPU texture (fewer instances for very dense grids)
 - [ ] Partial buffer updates for streaming (append-only `write_buffer` ranges)
 - [ ] Hit testing / picking (GPU id buffer) for tooltips and selection
 - [ ] MSAA option and HiDPI-aware line widths
@@ -142,16 +195,18 @@ first layer on top of it.
 - [ ] JS/TypeScript bindings via wasm-bindgen (`npm i photic`) so web apps can use it
 
 **Finance (photic-finance)**
-- [ ] Volume pane, multiple synced panes
+- [x] Volume pane
+- [ ] Multiple synced panes, price-axis drag to scale
 - [ ] More indicators (RSI, MACD, Bollinger, VWAP), incremental on `push`
 - [ ] Drawing tools (trendline, fib, rectangle) anchored in data space
 - [ ] Footprint / volume profile / order-flow from tick data
 - [ ] Renko, range and volume bars
 
 **Integrations**
-- [ ] `photic-egui` widget crate (wraps the demo's callback into `ui.add(Chart::new(...))`)
+- [x] `photic-egui` widget crate
 - [ ] iced and bevy examples
-- [ ] Head-to-head benchmark suite vs lightweight-charts / ECharts / D3
+- [x] Head-to-head benchmark vs lightweight-charts
+- [ ] Benchmarks vs ECharts / D3, in a visible (non-headless) browser at 120 Hz
 
 ## License
 

@@ -34,7 +34,13 @@ pub struct Rect {
 
 impl Rect {
     pub fn new(min: [f32; 2], max: [f32; 2], color: Rgba) -> Self {
-        Self { min, max, min_px: [0.0, 0.0], color, _pad: 0 }
+        Self {
+            min,
+            max,
+            min_px: [0.0, 0.0],
+            color,
+            _pad: 0,
+        }
     }
     pub fn with_min_px(mut self, w: f32, h: f32) -> Self {
         self.min_px = [w, h];
@@ -63,5 +69,10 @@ pub struct Point {
 
 /// Turn a polyline into segments.
 pub fn polyline(points: &[[f32; 2]], color: Rgba, width_px: f32, out: &mut Vec<Segment>) {
-    out.extend(points.windows(2).map(|w| Segment { a: w[0], b: w[1], color, width_px }));
+    out.extend(points.windows(2).map(|w| Segment {
+        a: w[0],
+        b: w[1],
+        color,
+        width_px,
+    }));
 }

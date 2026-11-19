@@ -37,7 +37,13 @@ pub fn nice_ticks(lo: f64, hi: f64, count: usize) -> Vec<f64> {
     let inv = 1.0 / step;
     let exact_inv = step < 1.0 && (inv - inv.round()).abs() < 1e-9;
     (first..=last)
-        .map(|i| if exact_inv { i as f64 / inv.round() } else { i as f64 * step })
+        .map(|i| {
+            if exact_inv {
+                i as f64 / inv.round()
+            } else {
+                i as f64 * step
+            }
+        })
         .collect()
 }
 
@@ -87,12 +93,19 @@ impl LogScale {
     }
     /// Powers of ten plus 2x and 5x subdivisions when the span is small.
     pub fn ticks(&self) -> Vec<f64> {
-        let (lo, hi) = (self.domain.0.min(self.domain.1), self.domain.0.max(self.domain.1));
+        let (lo, hi) = (
+            self.domain.0.min(self.domain.1),
+            self.domain.0.max(self.domain.1),
+        );
         if !(lo > 0.0) || !hi.is_finite() {
             return Vec::new(); // log scale needs a positive, finite domain
         }
         let (e0, e1) = (lo.log10().floor() as i32, hi.log10().ceil() as i32);
-        let subs: &[f64] = if e1 - e0 <= 3 { &[1.0, 2.0, 5.0] } else { &[1.0] };
+        let subs: &[f64] = if e1 - e0 <= 3 {
+            &[1.0, 2.0, 5.0]
+        } else {
+            &[1.0]
+        };
         let mut out = Vec::new();
         for e in e0..=e1 {
             for s in subs {
@@ -154,26 +167,53 @@ impl TimeScale {
     /// simplification documented as future work.
     pub fn ticks(&self, count: usize) -> (i64, Vec<TimeTick>) {
         const STEPS: &[i64] = &[
-            SEC, 5 * SEC, 15 * SEC, 30 * SEC, MIN, 5 * MIN, 15 * MIN, 30 * MIN, HOUR,
-            3 * HOUR, 6 * HOUR, 12 * HOUR, DAY, 2 * DAY, 7 * DAY, 30 * DAY, 90 * DAY,
+            SEC,
+            5 * SEC,
+            15 * SEC,
+            30 * SEC,
+            MIN,
+            5 * MIN,
+            15 * MIN,
+            30 * MIN,
+            HOUR,
+            3 * HOUR,
+            6 * HOUR,
+            12 * HOUR,
+            DAY,
+            2 * DAY,
+            7 * DAY,
+            30 * DAY,
+            90 * DAY,
             365 * DAY,
         ];
-        let (lo, hi) = (self.domain.0.min(self.domain.1), self.domain.0.max(self.domain.1));
+        let (lo, hi) = (
+            self.domain.0.min(self.domain.1),
+            self.domain.0.max(self.domain.1),
+        );
         let target = (hi - lo) / count.max(1) as i64;
-        let step = STEPS.iter().copied().find(|s| *s >= target).unwrap_or_else(|| {
-            // round *up* to a nice number of years so we never exceed `count`
-            let years = (target as f64 / (365 * DAY) as f64).ceil().max(1.0);
-            let nice = nice_step(years, 1).max(1.0);
-            let nice = if nice < years { nice * 2.0 } else { nice };
-            nice as i64 * 365 * DAY
-        });
+        let step = STEPS
+            .iter()
+            .copied()
+            .find(|s| *s >= target)
+            .unwrap_or_else(|| {
+                // round *up* to a nice number of years so we never exceed `count`
+                let years = (target as f64 / (365 * DAY) as f64).ceil().max(1.0);
+                let nice = nice_step(years, 1).max(1.0);
+                let nice = if nice < years { nice * 2.0 } else { nice };
+                nice as i64 * 365 * DAY
+            });
         // unit whose change marks a tick as major
         let unit = |t: i64| -> i64 {
             let (y, m, d, h) = civil(t);
-            if step < HOUR { (y * 12 + m) * 31 * 24 + d * 24 + h }
-            else if step < DAY { (y * 12 + m) * 31 + d }
-            else if step < 30 * DAY { y * 12 + m }
-            else { y }
+            if step < HOUR {
+                (y * 12 + m) * 31 * 24 + d * 24 + h
+            } else if step < DAY {
+                (y * 12 + m) * 31 + d
+            } else if step < 30 * DAY {
+                y * 12 + m
+            } else {
+                y
+            }
         };
         let mut t = lo.div_euclid(step) * step;
         if t < lo {
@@ -183,7 +223,10 @@ impl TimeScale {
         let mut prev = unit(t - step);
         while t <= hi && out.len() < 10_000 {
             let u = unit(t);
-            out.push(TimeTick { time_ms: t, major: u != prev });
+            out.push(TimeTick {
+                time_ms: t,
+                major: u != prev,
+            });
             prev = u;
             t += step;
         }
@@ -197,9 +240,15 @@ mod tests {
 
     #[test]
     fn nice_ticks_basic() {
-        assert_eq!(nice_ticks(0.0, 10.0, 5), vec![0.0, 2.0, 4.0, 6.0, 8.0, 10.0]);
+        assert_eq!(
+            nice_ticks(0.0, 10.0, 5),
+            vec![0.0, 2.0, 4.0, 6.0, 8.0, 10.0]
+        );
         assert_eq!(nice_ticks(0.0, 0.3, 3), vec![0.0, 0.1, 0.2, 0.3]);
-        assert_eq!(nice_ticks(0.0, 1.2, 6), vec![0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2]);
+        assert_eq!(
+            nice_ticks(0.0, 1.2, 6),
+            vec![0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2]
+        );
         let t = nice_ticks(101.3, 104.9, 4);
         assert_eq!(t, vec![102.0, 103.0, 104.0]);
     }
@@ -222,7 +271,9 @@ mod tests {
 
     #[test]
     fn time_ticks_hourly() {
-        let s = TimeScale { domain: (0, 10 * HOUR) };
+        let s = TimeScale {
+            domain: (0, 10 * HOUR),
+        };
         let (step, ticks) = s.ticks(10);
         assert_eq!(step, HOUR);
         assert_eq!(ticks.len(), 11);
@@ -233,7 +284,9 @@ mod tests {
     #[test]
     fn time_ticks_multi_year_never_exceed_count() {
         for years in [5i64, 20, 39, 100] {
-            let s = TimeScale { domain: (0, years * 365 * DAY) };
+            let s = TimeScale {
+                domain: (0, years * 365 * DAY),
+            };
             let (_, ticks) = s.ticks(10);
             assert!(ticks.len() <= 11, "{years}y -> {} ticks", ticks.len());
         }
@@ -266,7 +319,11 @@ pub fn format_utc(ms: i64) -> String {
     let secs = ms.div_euclid(1000);
     let (days, sod) = (secs.div_euclid(86_400), secs.rem_euclid(86_400));
     let (y, m, d) = civil_from_days(days);
-    format!("{y:04}-{m:02}-{d:02} {:02}:{:02}", sod / 3600, sod % 3600 / 60)
+    format!(
+        "{y:04}-{m:02}-{d:02} {:02}:{:02}",
+        sod / 3600,
+        sod % 3600 / 60
+    )
 }
 
 #[cfg(test)]

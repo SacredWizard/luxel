@@ -111,7 +111,8 @@ mod tests {
         let c = Camera2D::new((1.6e12, 1.6e12 + 1000.0), (10.0, 20.0), (100.0, 100.0));
         let origin = (1.6e12, 10.0);
         let t = c.gpu_transform(origin);
-        let clip = |dx: f32, dy: f32| (dx * t.scale[0] + t.offset[0], dy * t.scale[1] + t.offset[1]);
+        let clip =
+            |dx: f32, dy: f32| (dx * t.scale[0] + t.offset[0], dy * t.scale[1] + t.offset[1]);
         let (a, b) = clip(0.0, 0.0);
         let (cx, cy) = clip(1000.0, 10.0);
         assert!((a + 1.0).abs() < 1e-6 && (b + 1.0).abs() < 1e-6);

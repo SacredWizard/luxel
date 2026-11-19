@@ -7,12 +7,14 @@ publish = false
 
 [dependencies]
 photic-core = { path = "../../crates/photic-core" }
-photic-gpu = { path = "../../crates/photic-gpu" }
 photic-finance = { path = "../../crates/photic-finance" }
+photic-egui = { path = "../../crates/photic-egui" }
 eframe = { version = "0.35", default-features = false, features = ["wgpu", "default_fonts"] }
-egui-wgpu = "0.35"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4"
-web-sys = { version = "0.3", features = ["Window", "Document", "HtmlCanvasElement", "console", "Performance"] }
+web-sys = { version = "0.3", features = ["Window", "Document", "HtmlCanvasElement", "console", "Performance", "Location"] }
 wasm-bindgen = "0.2"
+
+[lints]
+workspace = true

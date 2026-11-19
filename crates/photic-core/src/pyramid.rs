@@ -28,7 +28,10 @@ impl MinMax {
 impl Aggregate for MinMax {
     #[inline]
     fn merge(&self, next: &Self) -> Self {
-        Self { min: self.min.min(next.min), max: self.max.max(next.max) }
+        Self {
+            min: self.min.min(next.min),
+            max: self.max.max(next.max),
+        }
     }
 }
 
@@ -47,7 +50,9 @@ pub struct Pyramid<T: Aggregate> {
 
 impl<T: Aggregate> Default for Pyramid<T> {
     fn default() -> Self {
-        Self { levels: vec![Vec::new()] }
+        Self {
+            levels: vec![Vec::new()],
+        }
     }
 }
 
@@ -59,7 +64,13 @@ impl<T: Aggregate> Pyramid<T> {
             let prev = levels.last().unwrap();
             let next: Vec<T> = prev
                 .chunks(2)
-                .map(|c| if c.len() == 2 { c[0].merge(&c[1]) } else { c[0] })
+                .map(|c| {
+                    if c.len() == 2 {
+                        c[0].merge(&c[1])
+                    } else {
+                        c[0]
+                    }
+                })
                 .collect();
             levels.push(next);
         }
@@ -143,12 +154,18 @@ impl<T: Aggregate> Pyramid<T> {
         while s < e {
             let lvl = &self.levels[k];
             if s & 1 == 1 {
-                left = Some(match left { Some(l) => l.merge(&lvl[s]), None => lvl[s] });
+                left = Some(match left {
+                    Some(l) => l.merge(&lvl[s]),
+                    None => lvl[s],
+                });
                 s += 1;
             }
             if e & 1 == 1 {
                 e -= 1;
-                right = Some(match right { Some(r) => lvl[e].merge(&r), None => lvl[e] });
+                right = Some(match right {
+                    Some(r) => lvl[e].merge(&r),
+                    None => lvl[e],
+                });
             }
             s /= 2;
             e /= 2;
@@ -166,7 +183,9 @@ impl<T: Aggregate> Pyramid<T> {
         let k = k.min(self.max_level());
         let lvl = &self.levels[k];
         let s = (start >> k).min(lvl.len());
-        let e = (end.saturating_add((1 << k) - 1) >> k).min(lvl.len()).max(s);
+        let e = (end.saturating_add((1 << k) - 1) >> k)
+            .min(lvl.len())
+            .max(s);
         (s << k, &lvl[s..e])
     }
 }
@@ -199,7 +218,9 @@ mod tests {
 
     #[test]
     fn push_matches_build() {
-        let data: Vec<MinMax> = (0..777).map(|i| MinMax::point(((i * 37) % 101) as f64)).collect();
+        let data: Vec<MinMax> = (0..777)
+            .map(|i| MinMax::point(((i * 37) % 101) as f64))
+            .collect();
         let mut p = Pyramid::build(data[..10].to_vec());
         for d in &data[10..] {
             p.push(*d);

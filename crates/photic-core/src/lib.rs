@@ -19,7 +19,9 @@ pub mod scale;
 
 pub use camera::{Camera2D, GpuTransform};
 pub use pyramid::{Aggregate, MinMax, Pyramid};
-pub use scale::{format_utc, nice_step, nice_ticks, BandScale, LinearScale, LogScale, TimeScale, TimeTick};
+pub use scale::{
+    BandScale, LinearScale, LogScale, TimeScale, TimeTick, format_utc, nice_step, nice_ticks,
+};
 
 /// Pick the pyramid level so that roughly `target_per_px` items cover one
 /// pixel. `items_per_px` is visible-items / plot-width-in-pixels.
@@ -46,3 +48,6 @@ mod tests {
 
 pub mod prims;
 pub use prims::{Point, Rect, Rgba, Segment};
+
+pub mod heatmap;
+pub use heatmap::{Heatmap, heat};

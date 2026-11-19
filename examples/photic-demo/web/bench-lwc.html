@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>lightweight-charts bench</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #12141a; overflow: hidden; }
+    #chart { position: absolute; inset: 0; }
+  </style>
+  <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+  <div id="chart"></div>
+  <script>
+    // Same scenario as photic-demo's `?bench=1`: 600 frames sweeping the visible
+    // width log-spaced from 300 bars to the whole series and back, panning
+    // toward older data along the way. Reports frame intervals (frame pacing,
+    // which includes the library's own rendering) and the time of each update call.
+    const params = new URLSearchParams(location.search);
+    const N = Number(params.get('bars') || 1000000);
+    const FRAMES = 600;
+    const report = (obj) => { const s = 'LWC_BENCH ' + JSON.stringify(obj); console.log(s); document.title = s; };
+
+    // xorshift-based random walk, same shape as photic_finance::random_walk
+    let state = 42n;
+    function genBars(n) {
+      let seed = 0x9E3779B9 >>> 0;
+      const rnd = () => { seed ^= seed << 13; seed >>>= 0; seed ^= seed >>> 17; seed ^= seed << 5; seed >>>= 0; return seed / 4294967296; };
+      const out = new Array(n);
+      let logp = Math.log(100), price = 100;
+      const t0 = 1600000000;
+      for (let i = 0; i < n; i++) {
+        const open = price;
+        logp += (rnd() - 0.5) * 0.004 - (logp - Math.log(100)) * 2e-5;
+        const close = Math.exp(logp);
+        const high = Math.max(open, close) + rnd() * 0.006 * price;
+        const low = Math.max(Math.min(open, close) - rnd() * 0.006 * price, 0.001);
+        out[i] = { time: t0 + i * 60, open, high, low, close };
+        price = close;
+      }
+      return out;
+    }
+
+    const tGen = performance.now();
+    const bars = genBars(N);
+    const genMs = performance.now() - tGen;
+
+    const chart = LightweightCharts.createChart(document.getElementById('chart'), {
+      autoSize: true,
+      layout: { background: { color: '#12141a' }, textColor: '#969696' },
+      grid: { vertLines: { color: '#262626' }, horzLines: { color: '#262626' } },
+      timeScale: { timeVisible: true, minBarSpacing: 0.001 },
+    });
+    const series = chart.addCandlestickSeries({
+      upColor: '#26a69a', downColor: '#ef5350', wickUpColor: '#26a69a', wickDownColor: '#ef5350', borderVisible: false,
+    });
+    const tLoad = performance.now();
+    series.setData(bars);
+    const loadMs = performance.now() - tLoad;
+
+    const intervals = [], cpu = [];
+    let frame = 0, last = 0;
+    function step(now) {
+      if (frame > 0) intervals.push(now - last);
+      last = now;
+      const p = frame / FRAMES;
+      const s = 1 - Math.abs(2 * p - 1);
+      const w = 300 * Math.pow(Math.max(N / 300, 1), s);
+      const end = N - Math.max(N - w, 0) * 0.3 * s;
+      const c0 = performance.now();
+      chart.timeScale().setVisibleLogicalRange({ from: end - w, to: end });
+      cpu.push(performance.now() - c0);
+      frame++;
+      if (frame <= FRAMES) { requestAnimationFrame(step); return; }
+      const st = (v) => { const a = [...v].sort((x, y) => x - y); const q = (f) => a[Math.floor((a.length - 1) * f)];
+        return { mean: +(a.reduce((x, y) => x + y, 0) / a.length).toFixed(3), p50: +q(0.5).toFixed(3), p95: +q(0.95).toFixed(3), p99: +q(0.99).toFixed(3), max: +a[a.length - 1].toFixed(3) }; };
+      const iv = st(intervals);
+      report({ engine: 'lightweight-charts@4.2.0', bars: N, frames: FRAMES, fps: +(1000 / iv.mean).toFixed(1), gen_ms: Math.round(genMs), load_ms: Math.round(loadMs), interval_ms: iv, cpu_ms: st(cpu) });
+    }
+    // let the initial render settle, then sweep
+    setTimeout(() => requestAnimationFrame(step), 500);
+  </script>
+</body>
+</html>

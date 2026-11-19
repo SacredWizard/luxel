@@ -7,3 +7,6 @@ license.workspace = true
 
 [dependencies]
 photic-core = { path = "../photic-core" }
+
+[lints]
+workspace = true
