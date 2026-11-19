@@ -1,0 +1,4 @@
+target/
+examples/photic-demo/web/*.wasm
+examples/photic-demo/web/*.js
+*.ppm
