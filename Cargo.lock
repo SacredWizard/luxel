@@ -1759,6 +1759,7 @@ name = "photic-demo"
 version = "0.1.0"
 dependencies = [
  "eframe",
+ "js-sys",
  "photic-core",
  "photic-egui",
  "photic-finance",

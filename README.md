@@ -84,11 +84,11 @@ viewport, same machine (Apple Silicon), same random-walk data shape.
 
 | bars | library | load | mean fps | p50 frame | p95 frame | p99 frame |
 |---:|---|---:|---:|---:|---:|---:|
-| 100K | photic | 1 ms | **60.1** | 16.7 ms | 17.6 ms | 18.0 ms |
+| 100K | photic | 1 ms | **60.1** | 16.7 ms | 17.6 ms | 17.9 ms |
 | 100K | lightweight-charts 4.2.0 | 39 ms | 51.0 | 16.7 ms | 49.9 ms | 50.1 ms |
-| 1M | photic | 12 ms | **59.6** | 16.7 ms | 17.5 ms | 17.8 ms |
+| 1M | photic | 8 ms | **60.0** | 16.7 ms | 16.9 ms | 17.0 ms |
 | 1M | lightweight-charts 4.2.0 | 454 ms | 11.6 | 16.7 ms | 433 ms | 617 ms |
-| 10M | photic | 114 ms | **60.0** | 16.7 ms | 17.3 ms | 17.8 ms |
+| 10M | photic | 119 ms | **60.0** | 16.7 ms | 17.5 ms | 17.7 ms |
 | 10M | lightweight-charts 4.2.0 | did not finish within 4 min | | | | |
 
 "Load" is building photic's pyramid vs `series.setData()`. photic's run also
@@ -105,6 +105,12 @@ general verdict. Reproduce it:
 ```bash
 python3 -m http.server -d examples/photic-demo/web 8080
 ```
+
+**Axis smoothness.** The same 1M-bar sweep also records the price axis every
+frame. Snapping the axis to the visible range (`smooth=0`, the old
+behaviour) moves it by up to 222% of its height in one frame (p99 per-frame
+acceleration 171%). The spring (`ChartStyle::y_smooth_secs = 0.12`) cuts that to
+34% (p99 10%), and that worst case only happens because the sweep zooms ~4% per frame.
 
 Then open `http://localhost:8080/?bars=1000000&bench=1` and
 `http://localhost:8080/bench-lwc.html?bars=1000000`. Each prints a
@@ -128,8 +134,10 @@ Chart::new("btc", &series)                        // OhlcSeries
     .show(ui, &mut self.chart_state);             // ChartState
 ```
 
-The price axis eases toward the visible range instead of snapping, so zooming
-feels continuous (`ChartStyle::y_ease_secs`, 0 to disable).
+The price and volume axes follow the visible range with a critically damped
+spring instead of snapping, so zooming feels continuous
+(`ChartStyle::y_smooth_secs`, 0 to snap). Volume is plotted per bar, so its
+scale doesn't jump when the zoom crosses an LOD level.
 
 ### With any wgpu host
 

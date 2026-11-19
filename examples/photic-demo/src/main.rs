@@ -12,7 +12,7 @@
 
 use eframe::egui;
 use photic_core::{Heatmap, Rgba};
-use photic_egui::{Chart, ChartState};
+use photic_egui::{Chart, ChartState, ChartStyle};
 use photic_finance::{LineSeries, OhlcSeries, ema, random_walk, sma, synthetic_book};
 
 /// Bars of synthetic order-book history (one heatmap column per bar).
@@ -42,6 +42,8 @@ struct Bench {
     last: f64,
     intervals: Vec<f64>,
     cpu: Vec<f64>,
+    /// Price-axis range each frame, to measure how smoothly it moves.
+    axis: Vec<(f64, f64)>,
     done: bool,
 }
 
@@ -52,6 +54,7 @@ impl Bench {
             total: 600,
             last: 0.0,
             intervals: Vec::new(),
+            axis: Vec::new(),
             cpu: Vec::new(),
             done: false,
         }
@@ -87,7 +90,7 @@ impl App {
             series: OhlcSeries::default(),
             sma50: LineSeries::default(),
             ema200: LineSeries::default(),
-            book: Heatmap::new(1, 0.0, 0.0, 1.0),
+            book: Heatmap::new(1, 0, 0.0, 1.0),
             chart: ChartState::default(),
             show_ma: true,
             show_volume: true,
@@ -126,6 +129,7 @@ impl App {
         if b.frame > 0 {
             b.intervals.push(t - b.last);
             b.cpu.push(self.ui_ms);
+            b.axis.push(self.chart.cam.y);
         }
         b.last = t;
         // 0..1..0 sweep, log-spaced visible width from 300 bars to all bars
@@ -149,10 +153,30 @@ impl App {
                     *v.last().unwrap(),
                 )
             };
+            // axis smoothness: largest single-frame move and p99 per-frame
+            // acceleration of either axis end, in % of the axis height
+            let ax = &b.axis;
+            let mut step = 0.0f64;
+            let mut acc: Vec<f64> = Vec::new();
+            for i in 1..ax.len() {
+                let h = (ax[i].1 - ax[i].0).max(1e-12);
+                let d = ((ax[i].0 - ax[i - 1].0).abs()).max((ax[i].1 - ax[i - 1].1).abs());
+                step = step.max(d / h * 100.0);
+                if i >= 2 {
+                    let a0 = ax[i].0 - 2.0 * ax[i - 1].0 + ax[i - 2].0;
+                    let a1 = ax[i].1 - 2.0 * ax[i - 1].1 + ax[i - 2].1;
+                    acc.push(a0.abs().max(a1.abs()) / h * 100.0);
+                }
+            }
+            acc.sort_by(|a, b| a.total_cmp(b));
+            let acc99 = acc
+                .get((acc.len().max(1) - 1) * 99 / 100)
+                .copied()
+                .unwrap_or(0.0);
             let (im, i50, i95, i99, imax) = stats(&mut b.intervals);
             let (cm, c50, c95, c99, cmax) = stats(&mut b.cpu);
             let json = format!(
-                "{{\"engine\":\"photic\",\"bars\":{n},\"load_ms\":{:.0},\"frames\":{},\"fps\":{:.1},\"interval_ms\":{{\"mean\":{im:.2},\"p50\":{i50:.2},\"p95\":{i95:.2},\"p99\":{i99:.2},\"max\":{imax:.2}}},\"cpu_ms\":{{\"mean\":{cm:.3},\"p50\":{c50:.3},\"p95\":{c95:.3},\"p99\":{c99:.3},\"max\":{cmax:.3}}},\"rebuilds\":{}}}",
+                "{{\"engine\":\"photic\",\"bars\":{n},\"load_ms\":{:.0},\"frames\":{},\"fps\":{:.1},\"interval_ms\":{{\"mean\":{im:.2},\"p50\":{i50:.2},\"p95\":{i95:.2},\"p99\":{i99:.2},\"max\":{imax:.2}}},\"cpu_ms\":{{\"mean\":{cm:.3},\"p50\":{c50:.3},\"p95\":{c95:.3},\"p99\":{c99:.3},\"max\":{cmax:.3}}},\"rebuilds\":{},\"axis_max_step_pct\":{step:.2},\"axis_accel_p99_pct\":{acc99:.3}}}",
                 self.load_ms,
                 b.total,
                 1000.0 / im,
@@ -198,7 +222,13 @@ impl eframe::App for App {
         egui::CentralPanel::default()
             .frame(egui::Frame::new().fill(egui::Color32::from_rgb(18, 20, 26)))
             .show(root, |ui| {
-                let mut chart = Chart::new("main", &self.series).volume(self.show_volume);
+                let mut style = ChartStyle::default();
+                if let Some(t) = option("smooth").and_then(|v| v.parse().ok()) {
+                    style.y_smooth_secs = t; // e.g. smooth=0 to compare with snapping
+                }
+                let mut chart = Chart::new("main", &self.series)
+                    .volume(self.show_volume)
+                    .style(style);
                 if self.show_book {
                     chart = chart.heatmap(&self.book);
                 }
@@ -297,47 +327,34 @@ fn main() -> eframe::Result {
 
 #[cfg(target_arch = "wasm32")]
 fn main() {
-    use wasm_bindgen::{JsCast, closure::Closure};
+    use wasm_bindgen::JsCast;
     std::panic::set_hook(Box::new(|p| {
         web_sys::console::error_1(&format!("photic panic: {p}").into())
     }));
-
-    fn start() {
-        wasm_bindgen_futures::spawn_local(async {
-            let canvas = web_sys::window()
-                .and_then(|w| w.document())
-                .and_then(|d| d.get_element_by_id("photic"))
-                .and_then(|e| e.dyn_into::<web_sys::HtmlCanvasElement>().ok())
-                .expect("canvas #photic");
-            eframe::WebRunner::new()
-                .start(
-                    canvas,
-                    eframe::WebOptions::default(),
-                    Box::new(|cc| Ok(Box::new(App::new(cc)))),
-                )
-                .await
-                .expect("start");
-        });
-    }
-
-    // eframe drops the initial font-texture upload if the first frame runs
-    // while the page is hidden, then panics on the next frame. Start only once
-    // the page is visible.
-    let doc = web_sys::window()
-        .and_then(|w| w.document())
-        .expect("document");
-    if !doc.hidden() {
-        start();
-    } else {
-        let started = std::rc::Rc::new(std::cell::Cell::new(false));
-        let d2 = doc.clone();
-        let cb = Closure::<dyn FnMut()>::new(move || {
-            if !d2.hidden() && !started.replace(true) {
-                start();
-            }
-        });
-        doc.add_event_listener_with_callback("visibilitychange", cb.as_ref().unchecked_ref())
-            .expect("listener");
-        cb.forget();
-    }
+    wasm_bindgen_futures::spawn_local(async {
+        let window = web_sys::window().expect("window");
+        let doc = window.document().expect("document");
+        // eframe drops the initial font-texture upload if its first frame runs
+        // while the page is hidden, then panics on the next frame. Wait until
+        // the page is visible (re-checked after every visibility change) and
+        // start in the same task, so there is no gap for it to hide again.
+        while doc.hidden() {
+            let p = js_sys::Promise::new(&mut |resolve, _| {
+                let _ = doc.add_event_listener_with_callback("visibilitychange", &resolve);
+            });
+            let _ = wasm_bindgen_futures::JsFuture::from(p).await;
+        }
+        let canvas = doc
+            .get_element_by_id("photic")
+            .and_then(|e| e.dyn_into::<web_sys::HtmlCanvasElement>().ok())
+            .expect("canvas #photic");
+        eframe::WebRunner::new()
+            .start(
+                canvas,
+                eframe::WebOptions::default(),
+                Box::new(|cc| Ok(Box::new(App::new(cc)))),
+            )
+            .await
+            .expect("start");
+    });
 }

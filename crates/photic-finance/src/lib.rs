@@ -133,9 +133,19 @@ pub fn candles(
     items.len()
 }
 
-/// Lower visible volume bars (`y = 0..volume`) of LOD level `k` into rects
-/// coloured by candle direction. Returns the largest visible volume, for
-/// fitting the volume pane.
+/// Average volume per base bar of an LOD item: `volume / bars covered`.
+/// Plotting this (instead of the summed volume) keeps bar heights stable when
+/// the zoom crosses an LOD level, so the volume pane never "bounces".
+pub fn avg_volume(series: &OhlcSeries, level: usize, first: usize, i: usize, b: &Bar) -> f64 {
+    let slot = 1usize << level.min(series.pyramid.max_level());
+    let start = first + i * slot;
+    let count = slot.min(series.len().saturating_sub(start)).max(1);
+    b.volume / count as f64
+}
+
+/// Lower visible volume bars of LOD level `k` into rects coloured by candle
+/// direction. Heights are [`avg_volume`] (per base bar), so they don't change
+/// with the LOD level. Returns the largest visible height, for fitting the pane.
 pub fn volume(
     series: &OhlcSeries,
     level: usize,
@@ -158,10 +168,9 @@ pub fn volume(
             style.down
         };
         let color = Rgba((c.0 & !0xff) | alpha as u32);
-        out.push(
-            Rect::new([cx - half, 0.0], [cx + half, b.volume as f32], color).with_min_px(1.0, 0.0),
-        );
-        max = max.max(b.volume);
+        let v = avg_volume(series, level, first, i, b);
+        out.push(Rect::new([cx - half, 0.0], [cx + half, v as f32], color).with_min_px(1.0, 0.0));
+        max = max.max(v);
     }
     max
 }
@@ -184,7 +193,7 @@ pub fn synthetic_book(bars: &[Bar], start: usize, rows: usize, seed: u64) -> Hea
     };
     let pad = (hi - lo) * 0.1;
     let (y0, dy) = (lo - pad, (hi - lo + 2.0 * pad) / rows as f64);
-    let mut h = Heatmap::new(rows, start as f64, y0, dy);
+    let mut h = Heatmap::new(rows, start.min(bars.len()), y0, dy);
     let mut state = seed.max(1);
     let mut rnd = move || {
         state ^= state >> 12;
@@ -445,6 +454,21 @@ mod tests {
         );
         assert_eq!(out.len(), 100);
         assert!(max > 0.0 && out.iter().all(|r| r.max[1] as f64 <= max + 1e-3));
+        // per-bar heights are level-independent: level 3 average <= level 0 max
+        let mut coarse = Vec::new();
+        let cmax = volume(
+            &s,
+            3,
+            (96, 200),
+            96.0,
+            &CandleStyle::default(),
+            140,
+            &mut coarse,
+        );
+        assert!(
+            cmax <= 1100.0 && cmax > 100.0,
+            "avg volume per bar, got {cmax}"
+        );
         let h = synthetic_book(&bars, 1000, 64, 9);
         assert_eq!(h.cols(), 4000);
         assert!(h.max_value() > 0.0);
