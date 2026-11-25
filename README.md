@@ -91,6 +91,20 @@ viewport, same machine (Apple Silicon), same random-walk data shape.
 | 10M | photic | 119 ms | **60.0** | 16.7 ms | 17.5 ms | 17.7 ms |
 | 10M | lightweight-charts 4.2.0 | did not finish within 4 min | | | | |
 
+**Visible Chrome window, 120 Hz display** (same scenario, same machine). The
+window was briefly covered during some runs, which caused multi-second
+pauses that make mean fps meaningless, so this table uses frame-time
+percentiles:
+
+| bars | library | p50 frame | p95 frame | p99 frame |
+|---:|---|---:|---:|---:|
+| 100K | photic | 8.3 ms | **9.1 ms** | **9.4 ms** |
+| 100K | lightweight-charts 4.2.0 | 8.4 ms | 41.1 ms | 66.8 ms |
+| 1M | photic | 8.3 ms | **9.0 ms** | **9.3 ms** |
+| 1M | lightweight-charts 4.2.0 | 9.2 ms | 516 ms | 717 ms |
+| 10M | photic | 8.3 ms | **9.0 ms** | **9.3 ms** |
+| 10M | lightweight-charts 4.2.0 | did not finish within 3 min | | |
+
 "Load" is building photic's pyramid vs `series.setData()`. photic's run also
 draws an order-book heatmap, a volume pane and two indicators;
 lightweight-charts draws candles only. lightweight-charts' default
@@ -214,7 +228,8 @@ first layer on top of it.
 - [x] `photic-egui` widget crate
 - [ ] iced and bevy examples
 - [x] Head-to-head benchmark vs lightweight-charts
-- [ ] Benchmarks vs ECharts / D3, in a visible (non-headless) browser at 120 Hz
+- [x] Benchmark in a visible browser at 120 Hz
+- [ ] Benchmarks vs ECharts / D3
 
 ## License
 
