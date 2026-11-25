@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 340" width="760" height="340" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Bar chart. Largest one-frame axis jump: snapping 222%, spring 34%. 99th-percentile per-frame jerk: snapping 171%, spring 10%.">
+<rect width="760" height="340" rx="12" fill="#1a1a19"/>
+<text x="32" y="36" font-size="18" font-weight="600" fill="#f2f2f0">Price axis while zooming: snapping vs luxel's spring</text>
+<text x="32" y="58" font-size="13" fill="#a3a39f">Lower is better · 1M-bar zoom sweep, measured every frame, % of the axis height</text>
+<rect x="32" y="70" width="12" height="12" rx="3" fill="#6b6b68"/>
+<text x="50" y="80.5" font-size="13" fill="#f2f2f0">snapping (before)</text>
+<rect x="199.8" y="70" width="12" height="12" rx="3" fill="#3987e5"/>
+<text x="217.8" y="80.5" font-size="13" fill="#f2f2f0">luxel spring</text>
+<line x1="64" x2="736" y1="288.0" y2="288.0" stroke="#33332f"/>
+<text x="54" y="292.0" font-size="12" text-anchor="end" fill="#a3a39f">0%</text>
+<line x1="64" x2="736" y1="241.0" y2="241.0" stroke="#33332f"/>
+<text x="54" y="245.0" font-size="12" text-anchor="end" fill="#a3a39f">60%</text>
+<line x1="64" x2="736" y1="194.0" y2="194.0" stroke="#33332f"/>
+<text x="54" y="198.0" font-size="12" text-anchor="end" fill="#a3a39f">120%</text>
+<line x1="64" x2="736" y1="147.0" y2="147.0" stroke="#33332f"/>
+<text x="54" y="151.0" font-size="12" text-anchor="end" fill="#a3a39f">180%</text>
+<line x1="64" x2="736" y1="100.0" y2="100.0" stroke="#33332f"/>
+<text x="54" y="104.0" font-size="12" text-anchor="end" fill="#a3a39f">240%</text>
+<path d="M167.0,288.0 V118.1 Q167.0,114.1 171.0,114.1 H227.0 Q231.0,114.1 231.0,118.1 V288.0 Z" fill="#6b6b68"><title>snapping (before), largest one-frame jump: 222%</title></path>
+<text x="199.0" y="134.1" font-size="13" font-weight="600" text-anchor="middle" fill="#ffffff">222%</text>
+<path d="M233.0,288.0 V265.4 Q233.0,261.4 237.0,261.4 H293.0 Q297.0,261.4 297.0,265.4 V288.0 Z" fill="#3987e5"><title>luxel spring, largest one-frame jump: 34%</title></path>
+<text x="265.0" y="253.4" font-size="13" font-weight="600" text-anchor="middle" fill="#f2f2f0">34%</text>
+<text x="232.0" y="312.0" font-size="13" text-anchor="middle" fill="#f2f2f0">largest one-frame jump</text>
+<path d="M503.0,288.0 V158.0 Q503.0,154.0 507.0,154.0 H563.0 Q567.0,154.0 567.0,158.0 V288.0 Z" fill="#6b6b68"><title>snapping (before), p99 per-frame jerk: 171%</title></path>
+<text x="535.0" y="174.0" font-size="13" font-weight="600" text-anchor="middle" fill="#ffffff">171%</text>
+<path d="M569.0,288.0 V284.2 Q569.0,280.2 573.0,280.2 H629.0 Q633.0,280.2 633.0,284.2 V288.0 Z" fill="#3987e5"><title>luxel spring, p99 per-frame jerk: 10%</title></path>
+<text x="601.0" y="272.2" font-size="13" font-weight="600" text-anchor="middle" fill="#f2f2f0">10%</text>
+<text x="568.0" y="312.0" font-size="13" text-anchor="middle" fill="#f2f2f0">p99 per-frame jerk</text>
+<line x1="64" x2="736" y1="288.0" y2="288.0" stroke="#a3a39f"/>
+</svg>

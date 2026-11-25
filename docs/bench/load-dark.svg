@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 380" width="760" height="380" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Bar chart. Time to load the data. luxel: 1 ms at 100K bars, 9 ms at 1M, 52 ms at 10M. lightweight-charts: 37 ms at 100K, 446 ms at 1M, did not finish at 10M.">
+<rect width="760" height="380" rx="12" fill="#1a1a19"/>
+<text x="32" y="36" font-size="18" font-weight="600" fill="#f2f2f0">Time to load the data</text>
+<text x="32" y="58" font-size="13" fill="#a3a39f">Lower is better · luxel builds its LOD pyramid; lightweight-charts runs setData()</text>
+<rect x="32" y="70" width="12" height="12" rx="3" fill="#3987e5"/>
+<text x="50" y="80.5" font-size="13" fill="#f2f2f0">luxel</text>
+<rect x="111.0" y="70" width="12" height="12" rx="3" fill="#d95926"/>
+<text x="129.0" y="80.5" font-size="13" fill="#f2f2f0">lightweight-charts 4.2.0</text>
+<line x1="64" x2="736" y1="328.0" y2="328.0" stroke="#33332f"/>
+<text x="54" y="332.0" font-size="12" text-anchor="end" fill="#a3a39f">0 ms</text>
+<line x1="64" x2="736" y1="282.4" y2="282.4" stroke="#33332f"/>
+<text x="54" y="286.4" font-size="12" text-anchor="end" fill="#a3a39f">100 ms</text>
+<line x1="64" x2="736" y1="236.8" y2="236.8" stroke="#33332f"/>
+<text x="54" y="240.8" font-size="12" text-anchor="end" fill="#a3a39f">200 ms</text>
+<line x1="64" x2="736" y1="191.2" y2="191.2" stroke="#33332f"/>
+<text x="54" y="195.2" font-size="12" text-anchor="end" fill="#a3a39f">300 ms</text>
+<line x1="64" x2="736" y1="145.6" y2="145.6" stroke="#33332f"/>
+<text x="54" y="149.6" font-size="12" text-anchor="end" fill="#a3a39f">400 ms</text>
+<line x1="64" x2="736" y1="100.0" y2="100.0" stroke="#33332f"/>
+<text x="54" y="104.0" font-size="12" text-anchor="end" fill="#a3a39f">500 ms</text>
+<path d="M111.0,328.0 V328.0 Q111.0,326.0 113.0,326.0 H173.0 Q175.0,326.0 175.0,328.0 V328.0 Z" fill="#3987e5"><title>luxel, 100K bars: 1 ms</title></path>
+<text x="143.0" y="318.0" font-size="13" font-weight="600" text-anchor="middle" fill="#f2f2f0">1 ms</text>
+<path d="M177.0,328.0 V315.1 Q177.0,311.1 181.0,311.1 H237.0 Q241.0,311.1 241.0,315.1 V328.0 Z" fill="#d95926"><title>lightweight-charts 4.2.0, 100K bars: 37 ms</title></path>
+<text x="209.0" y="303.1" font-size="13" font-weight="600" text-anchor="middle" fill="#f2f2f0">37 ms</text>
+<text x="176.0" y="352.0" font-size="13" text-anchor="middle" fill="#f2f2f0">100K bars</text>
+<path d="M335.0,328.0 V327.9 Q335.0,323.9 339.0,323.9 H395.0 Q399.0,323.9 399.0,327.9 V328.0 Z" fill="#3987e5"><title>luxel, 1M bars: 9 ms</title></path>
+<text x="367.0" y="315.9" font-size="13" font-weight="600" text-anchor="middle" fill="#f2f2f0">9 ms</text>
+<path d="M401.0,328.0 V128.6 Q401.0,124.6 405.0,124.6 H461.0 Q465.0,124.6 465.0,128.6 V328.0 Z" fill="#d95926"><title>lightweight-charts 4.2.0, 1M bars: 446 ms</title></path>
+<text x="433.0" y="144.6" font-size="13" font-weight="600" text-anchor="middle" fill="#ffffff">446 ms</text>
+<text x="400.0" y="352.0" font-size="13" text-anchor="middle" fill="#f2f2f0">1M bars</text>
+<path d="M559.0,328.0 V308.3 Q559.0,304.3 563.0,304.3 H619.0 Q623.0,304.3 623.0,308.3 V328.0 Z" fill="#3987e5"><title>luxel, 10M bars: 52 ms</title></path>
+<text x="591.0" y="296.3" font-size="13" font-weight="600" text-anchor="middle" fill="#f2f2f0">52 ms</text>
+<text x="657.0" y="284.0" font-size="12" text-anchor="middle" fill="#a3a39f">✕</text>
+<text x="657.0" y="302.0" font-size="12" text-anchor="middle" fill="#a3a39f">did not</text>
+<text x="657.0" y="318.0" font-size="12" text-anchor="middle" fill="#a3a39f">finish</text>
+<text x="624.0" y="352.0" font-size="13" text-anchor="middle" fill="#f2f2f0">10M bars</text>
+<line x1="64" x2="736" y1="328.0" y2="328.0" stroke="#a3a39f"/>
+</svg>
