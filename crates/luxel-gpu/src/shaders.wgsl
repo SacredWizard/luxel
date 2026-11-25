@@ -1,4 +1,4 @@
-// photic-gpu shaders. One uniform per layer: data -> clip affine transform
+// luxel-gpu shaders. One uniform per layer: data -> clip affine transform
 // plus the viewport size, so pan/zoom never re-uploads instance data.
 
 struct View {

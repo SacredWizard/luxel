@@ -1,12 +1,12 @@
 //! CPU-side benchmark of the per-frame work: LOD build, visible-range price
 //! query and candle instance generation. GPU time is separate (one draw
 //! call per primitive kind).
-//! `cargo run -p photic-finance --release --example bench`
+//! `cargo run -p luxel-finance --release --example bench`
 use std::hint::black_box;
 use std::time::Instant;
 
-use photic_core::lod_level_for;
-use photic_finance::{CandleStyle, OhlcSeries, candles, random_walk};
+use luxel_core::lod_level_for;
+use luxel_finance::{CandleStyle, OhlcSeries, candles, random_walk};
 
 fn time<T>(iters: u32, mut f: impl FnMut() -> T) -> f64 {
     let t = Instant::now();

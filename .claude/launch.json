@@ -2,9 +2,9 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "photic-web",
+      "name": "luxel-web",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "-d", "examples/photic-demo/web", "8080"],
+      "runtimeArgs": ["-m", "http.server", "-d", "examples/luxel-demo/web", "8080"],
       "port": 8080
     }
   ]

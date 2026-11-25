@@ -1,14 +1,14 @@
 [package]
-name = "photic-demo"
+name = "luxel-demo"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 publish = false
 
 [dependencies]
-photic-core = { path = "../../crates/photic-core" }
-photic-finance = { path = "../../crates/photic-finance" }
-photic-egui = { path = "../../crates/photic-egui" }
+luxel-core = { path = "../../crates/luxel-core" }
+luxel-finance = { path = "../../crates/luxel-finance" }
+luxel-egui = { path = "../../crates/luxel-egui" }
 eframe = { version = "0.35", default-features = false, features = ["wgpu", "default_fonts"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]

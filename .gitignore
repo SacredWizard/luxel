@@ -1,4 +1,4 @@
 target/
-examples/photic-demo/web/*.wasm
-examples/photic-demo/web/*.js
+examples/luxel-demo/web/*.wasm
+examples/luxel-demo/web/*.js
 *.ppm

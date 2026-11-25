@@ -1,13 +1,13 @@
-//! # photic-egui
+//! # luxel-egui
 //!
-//! A ready-made candlestick chart widget for [egui] on top of photic's GPU
+//! A ready-made candlestick chart widget for [egui] on top of luxel's GPU
 //! renderer: candles, indicator lines, an order-book heatmap layer and a
 //! volume pane, with pan/zoom, a smoothly auto-fitting price axis, axes and
 //! a crosshair.
 //!
 //! ```ignore
 //! // once, at startup (eframe with the wgpu renderer):
-//! photic_egui::install(cc.wgpu_render_state.as_ref().unwrap());
+//! luxel_egui::install(cc.wgpu_render_state.as_ref().unwrap());
 //!
 //! // every frame:
 //! Chart::new("btc", &series)
@@ -23,12 +23,12 @@ use std::sync::Arc;
 
 use egui::{Align2, Color32, FontId, Pos2, Rect as ERect, Sense, Ui};
 use egui_wgpu::wgpu;
-use photic_core::{
+use luxel_core::{
     Camera2D, GpuTransform, Heatmap, Rect, Rgba, Segment, format_utc, heat, lod_level_for,
     nice_step, nice_ticks,
 };
-use photic_finance::{Bar, CandleStyle, LineSeries, OhlcSeries, avg_volume, candles, line, volume};
-use photic_gpu::{Layer, Renderer};
+use luxel_finance::{Bar, CandleStyle, LineSeries, OhlcSeries, avg_volume, candles, line, volume};
+use luxel_gpu::{Layer, Renderer};
 
 /// Shared GPU state stored in egui-wgpu's callback resources.
 struct Resources {
@@ -37,7 +37,7 @@ struct Resources {
     layers: HashMap<(egui::Id, u8), (Layer, u64)>,
 }
 
-/// Register photic's GPU pipelines with egui-wgpu. Call once at startup.
+/// Register luxel's GPU pipelines with egui-wgpu. Call once at startup.
 pub fn install(rs: &egui_wgpu::RenderState) {
     let renderer = Renderer::new(&rs.device, rs.target_format, 1);
     rs.renderer.write().callback_resources.insert(Resources {

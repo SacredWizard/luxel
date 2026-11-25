@@ -1,10 +1,10 @@
-//! # photic-finance
+//! # luxel-finance
 //!
-//! Financial charting on top of `photic-core`: OHLCV bars with an LOD
+//! Financial charting on top of `luxel-core`: OHLCV bars with an LOD
 //! pyramid that keeps true extremes, candle/volume lowering to GPU primitives,
 //! and streaming-friendly indicators.
 
-use photic_core::{Aggregate, Heatmap, MinMax, Pyramid, Rect, Rgba, Segment, prims::polyline};
+use luxel_core::{Aggregate, Heatmap, MinMax, Pyramid, Rect, Rgba, Segment, prims::polyline};
 
 /// One OHLCV bar. `time` is a Unix timestamp in milliseconds.
 #[derive(Clone, Copy, Debug, PartialEq, Default)]

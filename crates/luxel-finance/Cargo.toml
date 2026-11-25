@@ -1,12 +1,12 @@
 [package]
-name = "photic-finance"
+name = "luxel-finance"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 
 [dependencies]
-photic-core = { path = "../photic-core" }
+luxel-core = { path = "../luxel-core" }
 
 [lints]
 workspace = true

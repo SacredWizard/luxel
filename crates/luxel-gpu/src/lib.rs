@@ -1,6 +1,6 @@
-//! # photic-gpu
+//! # luxel-gpu
 //!
-//! wgpu renderer for `photic-core` primitives. Works with any wgpu host:
+//! wgpu renderer for `luxel-core` primitives. Works with any wgpu host:
 //! egui (`egui-wgpu` paint callback), iced, bevy, winit, or headless.
 //!
 //! * Data lives in persistent instance buffers ([`Layer`]); pan/zoom only
@@ -10,7 +10,7 @@
 //!   WebGPU **and** the WebGL2 fallback.
 
 use bytemuck::{Pod, Zeroable};
-use photic_core::{GpuTransform, Point, Rect, Segment};
+use luxel_core::{GpuTransform, Point, Rect, Segment};
 use wgpu::util::DeviceExt;
 
 pub use wgpu;
@@ -42,7 +42,7 @@ const POINT_ATTRS: [wgpu::VertexAttribute; 3] =
 impl Renderer {
     pub fn new(device: &wgpu::Device, format: wgpu::TextureFormat, sample_count: u32) -> Self {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("photic shaders"),
+            label: Some("luxel shaders"),
             source: wgpu::ShaderSource::Wgsl(
                 format!(
                     "const SRGB_TARGET: bool = {};\n{}",
@@ -53,7 +53,7 @@ impl Renderer {
             ),
         });
         let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("photic view"),
+            label: Some("luxel view"),
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
                 visibility: wgpu::ShaderStages::VERTEX,
@@ -66,7 +66,7 @@ impl Renderer {
             }],
         });
         let pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("photic"),
+            label: Some("luxel"),
             bind_group_layouts: &[Some(&layout)],
             immediate_size: 0,
         });
@@ -140,7 +140,7 @@ impl InstanceBuf {
     fn new(device: &wgpu::Device) -> Self {
         Self {
             buffer: device.create_buffer(&wgpu::BufferDescriptor {
-                label: Some("photic instances"),
+                label: Some("luxel instances"),
                 size: 256,
                 usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
                 mapped_at_creation: false,
@@ -156,7 +156,7 @@ impl InstanceBuf {
         if need > self.capacity {
             self.capacity = need.next_power_of_two();
             self.buffer = device.create_buffer(&wgpu::BufferDescriptor {
-                label: Some("photic instances"),
+                label: Some("luxel instances"),
                 size: self.capacity,
                 usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
                 mapped_at_creation: false,
@@ -182,12 +182,12 @@ pub struct Layer {
 impl Layer {
     pub fn new(device: &wgpu::Device, renderer: &Renderer) -> Self {
         let uniform = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("photic view"),
+            label: Some("luxel view"),
             contents: bytemuck::bytes_of(&ViewUniform::default()),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("photic view"),
+            label: Some("luxel view"),
             layout: &renderer.layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,

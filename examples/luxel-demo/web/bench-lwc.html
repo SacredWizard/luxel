@@ -13,7 +13,7 @@
 <body>
   <div id="chart"></div>
   <script>
-    // Same scenario as photic-demo's `?bench=1`: 600 frames sweeping the visible
+    // Same scenario as luxel-demo's `?bench=1`: 600 frames sweeping the visible
     // width log-spaced from 300 bars to the whole series and back, panning
     // toward older data along the way. Reports frame intervals (frame pacing,
     // which includes the library's own rendering) and the time of each update call.
@@ -22,7 +22,7 @@
     const FRAMES = 600;
     const report = (obj) => { const s = 'LWC_BENCH ' + JSON.stringify(obj); console.log(s); document.title = s; };
 
-    // xorshift-based random walk, same shape as photic_finance::random_walk
+    // xorshift-based random walk, same shape as luxel_finance::random_walk
     let state = 42n;
     function genBars(n) {
       let seed = 0x9E3779B9 >>> 0;

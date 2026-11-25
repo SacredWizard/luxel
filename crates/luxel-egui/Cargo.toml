@@ -1,16 +1,16 @@
 [package]
-name = "photic-egui"
+name = "luxel-egui"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Candlestick/heatmap chart widget for egui, GPU-rendered with photic"
+description = "Candlestick/heatmap chart widget for egui, GPU-rendered with luxel"
 
 [dependencies]
-photic-core = { path = "../photic-core" }
-photic-gpu = { path = "../photic-gpu" }
-photic-finance = { path = "../photic-finance" }
+luxel-core = { path = "../luxel-core" }
+luxel-gpu = { path = "../luxel-gpu" }
+luxel-finance = { path = "../luxel-finance" }
 egui = { version = "0.35", default-features = false }
 egui-wgpu = "0.35"
 

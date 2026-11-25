@@ -1,8 +1,8 @@
 //! Headless render: candles + SMA + scatter into a texture, saved as PPM.
-//! `cargo run -p photic-gpu --example offscreen -- out.ppm`
-use photic_core::{Camera2D, Point, Rgba, lod_level_for};
-use photic_finance::{CandleStyle, LineSeries, OhlcSeries, candles, line, random_walk, sma};
-use photic_gpu::{Layer, Renderer, wgpu};
+//! `cargo run -p luxel-gpu --example offscreen -- out.ppm`
+use luxel_core::{Camera2D, Point, Rgba, lod_level_for};
+use luxel_finance::{CandleStyle, LineSeries, OhlcSeries, candles, line, random_walk, sma};
+use luxel_gpu::{Layer, Renderer, wgpu};
 
 fn main() {
     let out = std::env::args()

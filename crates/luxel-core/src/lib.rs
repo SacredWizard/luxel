@@ -1,4 +1,4 @@
-//! # photic-core
+//! # luxel-core
 //!
 //! Renderer-agnostic building blocks for high-performance data visualisation:
 //!
@@ -10,7 +10,7 @@
 //!   affine transform relative to a local origin, so large values (timestamps,
 //!   prices, coordinates) keep full precision on the GPU.
 //!
-//! Nothing here depends on a GPU or GUI toolkit; `photic-gpu` renders it with
+//! Nothing here depends on a GPU or GUI toolkit; `luxel-gpu` renders it with
 //! wgpu, but a CPU rasteriser or SVG exporter could sit on top just as well.
 
 pub mod camera;

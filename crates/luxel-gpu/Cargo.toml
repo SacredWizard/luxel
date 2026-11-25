@@ -1,5 +1,5 @@
 [package]
-name = "photic-gpu"
+name = "luxel-gpu"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -8,10 +8,10 @@ license.workspace = true
 [dependencies]
 bytemuck = { version = "1", features = ["derive"] }
 wgpu = "29"  # default backends: Metal, Vulkan, DX12, GL, WebGPU (+ add "webgl" for the WebGL2 fallback)
-photic-core = { path = "../photic-core" }
+luxel-core = { path = "../luxel-core" }
 
 [dev-dependencies]
-photic-finance = { path = "../photic-finance" }
+luxel-finance = { path = "../luxel-finance" }
 pollster = "0.4"
 
 [lints]

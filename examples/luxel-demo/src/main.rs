@@ -1,8 +1,8 @@
-//! photic demo: millions of candles + order-book heatmap + volume, GPU-rendered
-//! inside egui via the `photic-egui` widget.
+//! luxel demo: millions of candles + order-book heatmap + volume, GPU-rendered
+//! inside egui via the `luxel-egui` widget.
 //!
-//! Native: `cargo run -p photic-demo --release`
-//! Web:    `examples/photic-demo/build-web.sh`, then serve `examples/photic-demo/web`.
+//! Native: `cargo run -p luxel-demo --release`
+//! Web:    `examples/luxel-demo/build-web.sh`, then serve `examples/luxel-demo/web`.
 //!
 //! Options (env vars natively, URL query on the web, e.g. `?bars=10000000&bench=1`):
 //! * `bars`: dataset size (default 1,000,000)
@@ -11,9 +11,9 @@
 //! * `shot=path.ppm` (native only): save a screenshot after a few frames and exit
 
 use eframe::egui;
-use photic_core::{Heatmap, Rgba};
-use photic_egui::{Chart, ChartState, ChartStyle};
-use photic_finance::{LineSeries, OhlcSeries, ema, random_walk, sma, synthetic_book};
+use luxel_core::{Heatmap, Rgba};
+use luxel_egui::{Chart, ChartState, ChartStyle};
+use luxel_finance::{LineSeries, OhlcSeries, ema, random_walk, sma, synthetic_book};
 
 /// Bars of synthetic order-book history (one heatmap column per bar).
 const BOOK_BARS: usize = 20_000;
@@ -64,7 +64,7 @@ impl Bench {
 fn option(name: &str) -> Option<String> {
     #[cfg(not(target_arch = "wasm32"))]
     {
-        std::env::var(format!("PHOTIC_{}", name.to_uppercase())).ok()
+        std::env::var(format!("LUXEL_{}", name.to_uppercase())).ok()
     }
     #[cfg(target_arch = "wasm32")]
     {
@@ -78,10 +78,10 @@ fn option(name: &str) -> Option<String> {
 
 impl App {
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        photic_egui::install(
+        luxel_egui::install(
             cc.wgpu_render_state
                 .as_ref()
-                .expect("photic-demo needs the wgpu renderer"),
+                .expect("luxel-demo needs the wgpu renderer"),
         );
         let n = option("bars")
             .and_then(|s| s.parse().ok())
@@ -176,13 +176,13 @@ impl App {
             let (im, i50, i95, i99, imax) = stats(&mut b.intervals);
             let (cm, c50, c95, c99, cmax) = stats(&mut b.cpu);
             let json = format!(
-                "{{\"engine\":\"photic\",\"bars\":{n},\"load_ms\":{:.0},\"frames\":{},\"fps\":{:.1},\"interval_ms\":{{\"mean\":{im:.2},\"p50\":{i50:.2},\"p95\":{i95:.2},\"p99\":{i99:.2},\"max\":{imax:.2}}},\"cpu_ms\":{{\"mean\":{cm:.3},\"p50\":{c50:.3},\"p95\":{c95:.3},\"p99\":{c99:.3},\"max\":{cmax:.3}}},\"rebuilds\":{},\"axis_max_step_pct\":{step:.2},\"axis_accel_p99_pct\":{acc99:.3}}}",
+                "{{\"engine\":\"luxel\",\"bars\":{n},\"load_ms\":{:.0},\"frames\":{},\"fps\":{:.1},\"interval_ms\":{{\"mean\":{im:.2},\"p50\":{i50:.2},\"p95\":{i95:.2},\"p99\":{i99:.2},\"max\":{imax:.2}}},\"cpu_ms\":{{\"mean\":{cm:.3},\"p50\":{c50:.3},\"p95\":{c95:.3},\"p99\":{c99:.3},\"max\":{cmax:.3}}},\"rebuilds\":{},\"axis_max_step_pct\":{step:.2},\"axis_accel_p99_pct\":{acc99:.3}}}",
                 self.load_ms,
                 b.total,
                 1000.0 / im,
                 self.chart.stats.rebuilds
             );
-            log_line(&format!("PHOTIC_BENCH {json}"));
+            log_line(&format!("LUXEL_BENCH {json}"));
         }
     }
 }
@@ -194,7 +194,7 @@ impl eframe::App for App {
         self.drive_bench(&ctx);
         egui::Panel::top("bar").show(root, |ui| {
             ui.horizontal(|ui| {
-                ui.strong("photic");
+                ui.strong("luxel");
                 for (label, n) in [("100K", 100_000), ("1M", 1_000_000), ("10M", 10_000_000)] {
                     if ui
                         .selectable_label(self.series.len() == n, format!("{label} bars"))
@@ -248,7 +248,7 @@ impl eframe::App for App {
 }
 
 impl App {
-    /// `PHOTIC_SHOT=out.ppm` saves a screenshot after a few frames and exits.
+    /// `LUXEL_SHOT=out.ppm` saves a screenshot after a few frames and exits.
     #[cfg(not(target_arch = "wasm32"))]
     fn debug_screenshot(&mut self, ctx: &egui::Context) {
         let Some(path) = option("shot") else { return };
@@ -315,11 +315,11 @@ fn main() -> eframe::Result {
     let opts = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([1400.0, 800.0])
-            .with_title("photic demo"),
+            .with_title("luxel demo"),
         ..Default::default()
     };
     eframe::run_native(
-        "photic demo",
+        "luxel demo",
         opts,
         Box::new(|cc| Ok(Box::new(App::new(cc)))),
     )
@@ -329,7 +329,7 @@ fn main() -> eframe::Result {
 fn main() {
     use wasm_bindgen::JsCast;
     std::panic::set_hook(Box::new(|p| {
-        web_sys::console::error_1(&format!("photic panic: {p}").into())
+        web_sys::console::error_1(&format!("luxel panic: {p}").into())
     }));
     wasm_bindgen_futures::spawn_local(async {
         let window = web_sys::window().expect("window");
@@ -345,9 +345,9 @@ fn main() {
             let _ = wasm_bindgen_futures::JsFuture::from(p).await;
         }
         let canvas = doc
-            .get_element_by_id("photic")
+            .get_element_by_id("luxel")
             .and_then(|e| e.dyn_into::<web_sys::HtmlCanvasElement>().ok())
-            .expect("canvas #photic");
+            .expect("canvas #luxel");
         eframe::WebRunner::new()
             .start(
                 canvas,
