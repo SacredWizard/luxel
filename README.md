@@ -27,63 +27,21 @@ things differently from SVG/Canvas2D libraries:
 
 It runs on Metal, Vulkan, DX12, **WebGPU and WebGL2** from the same code.
 
-## Crates
+## Benchmarks
 
-| crate | what | deps |
-|---|---|---|
-| [`luxel-core`](crates/luxel-core) | `Pyramid<T: Aggregate>` (generic LOD tree), `Heatmap` (column LOD by max), d3-style scales (linear, log, time, band), nice ticks, `Camera2D`, GPU primitive types | `bytemuck` |
-| [`luxel-gpu`](crates/luxel-gpu) | wgpu renderer: `Renderer` (pipelines) + `Layer` (instance buffers + view) | `wgpu` |
-| [`luxel-finance`](crates/luxel-finance) | OHLCV `Bar`, `OhlcSeries`, candle lowering, `LineSeries` (min/max LOD lines), SMA/EMA, streaming `push`/`update_last` | core |
-| [`luxel-egui`](crates/luxel-egui) | Ready-made egui chart widget: candles, indicator lines, order-book heatmap, volume pane, eased price axis, axes, crosshair | `egui`, `egui-wgpu` |
-| [`luxel-demo`](examples/luxel-demo) | egui app (native + browser): 100K / 1M / 10M bars, heatmap, volume, scripted benchmark mode | eframe |
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/bench/benchmark-dark.svg">
+  <img alt="Bar chart: frame rate of the slowest 5% of frames while zooming. luxel holds about 110 fps at 100K, 1M and 10M bars; lightweight-charts drops to 24 fps at 100K, 1.9 fps at 1M and does not finish at 10M." src="docs/bench/benchmark-light.svg" width="760">
+</picture>
 
-`luxel-core` has no GPU or GUI dependency. `luxel-gpu` depends only on
-`wgpu`, so it plugs into **egui, iced, bevy, winit or headless** rendering.
+Same scripted zoom sweep in both libraries (from 300 bars to the whole series
+and back), same browser and machine (Apple Silicon). luxel stays near the
+120 Hz display limit at every size; TradingView's lightweight-charts slows as
+the data grows and could not finish at 10M bars. Chart source:
+[`docs/bench/make_chart.py`](docs/bench/make_chart.py).
 
-## Try it
-
-```bash
-cargo run -p luxel-demo --release
-```
-
-```bash
-cargo run -p luxel-gpu --example offscreen -- out.ppm
-```
-
-```bash
-cargo run -p luxel-finance --release --example bench
-```
-
-Browser (WebGPU; add wgpu's `webgl` feature for the WebGL2 fallback, which
-the demo gets through egui-wgpu):
-
-```bash
-cargo install wasm-bindgen-cli --version <version of wasm-bindgen in Cargo.lock>
-```
-
-```bash
-./examples/luxel-demo/build-web.sh
-```
-
-```bash
-python3 -m http.server -d examples/luxel-demo/web 8080
-```
-
-## Numbers (Apple Silicon, release build)
-
-CPU time per frame for the visible range: price-range query plus candle
-instance generation, measured by `examples/bench.rs` at a 2000 px plot width.
-
-| bars | pyramid build | range query | frame, whole series visible | frame, last 500 bars |
-|---:|---:|---:|---:|---:|
-| 100K | 0.6 ms | 0.03 µs | 2.3 µs | 1.4 µs |
-| 1M | 5.7 ms | 0.04 µs | 2.2 µs | 1.1 µs |
-| 10M | 70 ms | 0.03 µs | 1.2 µs | 0.9 µs |
-| 50M | 790 ms | 0.03 µs | 1.7 µs | 1.9 µs |
-
-In the demo, 10M bars fully zoomed out rebuild their instances in about 1.2 ms
-and the app runs at the display refresh rate (about 120 fps on a 120 Hz
-screen).
+<details>
+<summary><b>Full results, method and caveats</b></summary>
 
 ### In the browser: luxel vs TradingView lightweight-charts
 
@@ -139,6 +97,66 @@ acceleration 171%). The spring (`ChartStyle::y_smooth_secs = 0.12`) cuts that to
 Then open `http://localhost:8080/?bars=1000000&bench=1` and
 `http://localhost:8080/bench-lwc.html?bars=1000000`. Each prints a
 `*_BENCH {json}` line to the console and the page title. Use a visible tab: browsers throttle hidden ones.
+
+### CPU cost per frame (native, release build)
+
+CPU time per frame for the visible range: price-range query plus candle
+instance generation, measured by `examples/bench.rs` at a 2000 px plot width.
+
+| bars | pyramid build | range query | frame, whole series visible | frame, last 500 bars |
+|---:|---:|---:|---:|---:|
+| 100K | 0.6 ms | 0.03 µs | 2.3 µs | 1.4 µs |
+| 1M | 5.7 ms | 0.04 µs | 2.2 µs | 1.1 µs |
+| 10M | 70 ms | 0.03 µs | 1.2 µs | 0.9 µs |
+| 50M | 790 ms | 0.03 µs | 1.7 µs | 1.9 µs |
+
+In the demo, 10M bars fully zoomed out rebuild their instances in about 1.2 ms
+and the app runs at the display refresh rate (about 120 fps on a 120 Hz
+screen).
+
+</details>
+
+## Crates
+
+| crate | what | deps |
+|---|---|---|
+| [`luxel-core`](crates/luxel-core) | `Pyramid<T: Aggregate>` (generic LOD tree), `Heatmap` (column LOD by max), d3-style scales (linear, log, time, band), nice ticks, `Camera2D`, GPU primitive types | `bytemuck` |
+| [`luxel-gpu`](crates/luxel-gpu) | wgpu renderer: `Renderer` (pipelines) + `Layer` (instance buffers + view) | `wgpu` |
+| [`luxel-finance`](crates/luxel-finance) | OHLCV `Bar`, `OhlcSeries`, candle lowering, `LineSeries` (min/max LOD lines), SMA/EMA, streaming `push`/`update_last` | core |
+| [`luxel-egui`](crates/luxel-egui) | Ready-made egui chart widget: candles, indicator lines, order-book heatmap, volume pane, eased price axis, axes, crosshair | `egui`, `egui-wgpu` |
+| [`luxel-demo`](examples/luxel-demo) | egui app (native + browser): 100K / 1M / 10M bars, heatmap, volume, scripted benchmark mode | eframe |
+
+`luxel-core` has no GPU or GUI dependency. `luxel-gpu` depends only on
+`wgpu`, so it plugs into **egui, iced, bevy, winit or headless** rendering.
+
+## Try it
+
+```bash
+cargo run -p luxel-demo --release
+```
+
+```bash
+cargo run -p luxel-gpu --example offscreen -- out.ppm
+```
+
+```bash
+cargo run -p luxel-finance --release --example bench
+```
+
+Browser (WebGPU; add wgpu's `webgl` feature for the WebGL2 fallback, which
+the demo gets through egui-wgpu):
+
+```bash
+cargo install wasm-bindgen-cli --version <version of wasm-bindgen in Cargo.lock>
+```
+
+```bash
+./examples/luxel-demo/build-web.sh
+```
+
+```bash
+python3 -m http.server -d examples/luxel-demo/web 8080
+```
 
 ## Using it
 

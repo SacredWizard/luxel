@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 380" width="760" height="380" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Benchmark: frame rate of the slowest 5% of frames while zooming. luxel holds about 110 fps at 100K, 1M and 10M bars; lightweight-charts drops to 24 fps at 100K, 2 fps at 1M and does not finish at 10M.">
+<rect width="760" height="380" rx="12" fill="#1a1a19"/>
+<text x="56" y="34" font-size="18" font-weight="600" fill="#f2f2f0">Frame rate of the slowest 5% of frames while zooming</text>
+<text x="56" y="56" font-size="13" fill="#a3a39f">Higher is better · visible Chrome window, 120 Hz display, same scripted zoom sweep</text>
+<rect x="56" y="68" width="12" height="12" rx="3" fill="#3987e5"/>
+<text x="74" y="78.5" font-size="13" fill="#f2f2f0">luxel</text>
+<rect x="135.0" y="68" width="12" height="12" rx="3" fill="#d95926"/>
+<text x="153.0" y="78.5" font-size="13" fill="#f2f2f0">lightweight-charts 4.2.0</text>
+<line x1="56" x2="736" y1="324.0" y2="324.0" stroke="#33332f" stroke-width="1"/>
+<text x="46" y="328.0" font-size="12" text-anchor="end" fill="#a3a39f">0</text>
+<line x1="56" x2="736" y1="271.4" y2="271.4" stroke="#33332f" stroke-width="1"/>
+<text x="46" y="275.4" font-size="12" text-anchor="end" fill="#a3a39f">30</text>
+<line x1="56" x2="736" y1="218.8" y2="218.8" stroke="#33332f" stroke-width="1"/>
+<text x="46" y="222.8" font-size="12" text-anchor="end" fill="#a3a39f">60</text>
+<line x1="56" x2="736" y1="166.2" y2="166.2" stroke="#33332f" stroke-width="1"/>
+<text x="46" y="170.2" font-size="12" text-anchor="end" fill="#a3a39f">90</text>
+<line x1="56" x2="736" y1="113.5" y2="113.5" stroke="#33332f" stroke-width="1"/>
+<text x="46" y="117.5" font-size="12" text-anchor="end" fill="#a3a39f">120</text>
+<text x="14" y="210.0" font-size="12" fill="#a3a39f" transform="rotate(-90 14 210.0)" text-anchor="middle">fps</text>
+<line x1="56" x2="736" y1="113.5" y2="113.5" stroke="#a3a39f" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="736" y="107.5" font-size="12" text-anchor="end" fill="#a3a39f">120 Hz display limit</text>
+<path d="M104.3,324.0 V135.3 Q104.3,131.3 108.3,131.3 H164.3 Q168.3,131.3 168.3,135.3 V324.0 Z" fill="#3987e5"><title>luxel, 100K bars: 110 fps (p95 frame 9.1 ms)</title></path>
+<text x="136.3" y="151.3" font-size="13" font-weight="600" text-anchor="middle" fill="#ffffff">110 fps</text>
+<path d="M170.3,324.0 V285.3 Q170.3,281.3 174.3,281.3 H230.3 Q234.3,281.3 234.3,285.3 V324.0 Z" fill="#d95926"><title>lightweight-charts 4.2.0, 100K bars: 24 fps (p95 frame 41.1 ms)</title></path>
+<text x="202.3" y="301.3" font-size="13" font-weight="600" text-anchor="middle" fill="#ffffff">24 fps</text>
+<text x="169.3" y="348.0" font-size="13" text-anchor="middle" fill="#f2f2f0">100K bars</text>
+<path d="M331.0,324.0 V133.1 Q331.0,129.1 335.0,129.1 H391.0 Q395.0,129.1 395.0,133.1 V324.0 Z" fill="#3987e5"><title>luxel, 1M bars: 111 fps (p95 frame 9 ms)</title></path>
+<text x="363.0" y="149.1" font-size="13" font-weight="600" text-anchor="middle" fill="#ffffff">111 fps</text>
+<path d="M397.0,324.0 V324.0 Q397.0,320.6 400.4,320.6 H457.6 Q461.0,320.6 461.0,324.0 V324.0 Z" fill="#d95926"><title>lightweight-charts 4.2.0, 1M bars: 2 fps (p95 frame 516 ms)</title></path>
+<text x="429.0" y="312.6" font-size="13" font-weight="600" text-anchor="middle" fill="#f2f2f0">1.9 fps</text>
+<text x="396.0" y="348.0" font-size="13" text-anchor="middle" fill="#f2f2f0">1M bars</text>
+<path d="M557.7,324.0 V133.1 Q557.7,129.1 561.7,129.1 H617.7 Q621.7,129.1 621.7,133.1 V324.0 Z" fill="#3987e5"><title>luxel, 10M bars: 111 fps (p95 frame 9 ms)</title></path>
+<text x="589.7" y="149.1" font-size="13" font-weight="600" text-anchor="middle" fill="#ffffff">111 fps</text>
+<text x="655.7" y="280.0" font-size="12" text-anchor="middle" fill="#a3a39f">✕</text>
+<text x="655.7" y="298.0" font-size="12" text-anchor="middle" fill="#a3a39f">did not</text>
+<text x="655.7" y="314.0" font-size="12" text-anchor="middle" fill="#a3a39f">finish</text>
+<text x="622.7" y="348.0" font-size="13" text-anchor="middle" fill="#f2f2f0">10M bars</text>
+<line x1="56" x2="736" y1="324.0" y2="324.0" stroke="#a3a39f" stroke-width="1"/>
+</svg>
